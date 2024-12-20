@@ -13,7 +13,7 @@ def cadastrar_item():
 
     if not all([nome, preco]):
         return jsonify({"erro": "Campos obrigatórios: nome, preco"}), 400
-
+    
     # Conectar ao banco e inserir o item
     connection = sqlite3.connect('data/ferro_velho.db')
     cursor = connection.cursor()
@@ -205,26 +205,26 @@ def deletar_transacao(id):
 
 @bp.route('/itens/<string:nome>', methods=['DELETE'])
 def deletar_item(nome):
-    connection = sqlite3.connect('data/ferro_velho.db')
-    cursor = connection.cursor()
+    try:
+        with sqlite3.connect('data/ferro_velho.db') as connection:
+            cursor = connection.cursor()
 
-    # Verificar se o item existe antes de tentar deletar
-    cursor.execute('SELECT id FROM itens WHERE nome = ?', (nome,))
-    item = cursor.fetchone()
+            # Verificar se o item existe antes de tentar deletar
+            cursor.execute('SELECT id FROM itens WHERE nome = ?', (nome,))
+            item = cursor.fetchone()
 
-    if not item:
-        connection.close()
-        return jsonify({"erro": f"Item '{nome}' não encontrado!"}), 404
+            if not item:
+                return jsonify({"erro": f"Item '{nome}' não encontrado!"}), 404
 
-    item_id = item[0]
+            item_id = item[0]
 
-    # Atualizar as transações associadas para remover a referência ao item
-    cursor.execute('UPDATE transacoes SET item_id = NULL WHERE item_id = ?', (item_id,))
+            # Atualizar as transações associadas para remover a referência ao item
+            cursor.execute('UPDATE transacoes SET item_id = NULL WHERE item_id = ?', (item_id,))
 
-    # Deletar o item da tabela de itens
-    cursor.execute('DELETE FROM itens WHERE nome = ?', (nome,))
-    connection.commit()
-    connection.close()
+            # Deletar o item da tabela de itens
+            cursor.execute('DELETE FROM itens WHERE nome = ?', (nome,))
+            connection.commit()
+        return jsonify({"mensagem": f"Item '{nome}' deletado com sucesso, mas as transações associadas não foram removidas!"}), 200
 
-    return jsonify(
-        {"mensagem": f"Item '{nome}' deletado com sucesso, mas as transações associadas não foram removidas!"}), 200
+    except sqlite3.Error as e:
+        return jsonify({"erro": f"Erro ao acessar o banco de dados: {e}"}), 500
