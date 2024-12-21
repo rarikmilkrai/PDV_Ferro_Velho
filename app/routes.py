@@ -203,6 +203,7 @@ def deletar_transacao(id):
     return jsonify({"mensagem": f"Transação com ID {id} deletada com sucesso!"}), 200
 
 
+# Rota para deletar item pelo nome 
 @bp.route('/itens/<string:nome>', methods=['DELETE'])
 def deletar_item(nome):
     try:
@@ -222,8 +223,9 @@ def deletar_item(nome):
             cursor.execute('UPDATE transacoes SET item_id = NULL WHERE item_id = ?', (item_id,))
 
             # Deletar o item da tabela de itens
-            cursor.execute('DELETE FROM itens WHERE nome = ?', (nome,))
+            cursor.execute('DELETE FROM itens WHERE id = ?', (item_id,))
             connection.commit()
+
         return jsonify({"mensagem": f"Item '{nome}' deletado com sucesso, mas as transações associadas não foram removidas!"}), 200
 
     except sqlite3.Error as e:
